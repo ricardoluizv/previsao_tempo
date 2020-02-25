@@ -15,12 +15,116 @@ import {
 } from './styled';
 import apiWeather from '../../services/api';
 
-const useStyles = makeStyles({
-  table: {
-    minWidth: 650,
-  },
-});
+export default function Weather({ match, history }) {
+  // Armazena o código da cidade
+  const cityId = match.params.id;
 
+  // Caso o código da cidade seja zero, retorna para página inicial
+  if (cityId <= 0) {
+    history.push('/');
+  }
+
+  // Carrega os estilos configurados para serem aplicados no html
+  const classes = useStyles();
+
+  /** Consulta a previsão do tempo a aprtir do código da cidade */
+  async function GetWeather(cityId) {
+    const api = await apiWeather.get(`/cidade/7dias/${cityId}/previsao.xml`);
+
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(api.data, 'text/xml');
+
+    const uf = xmlDoc.getElementsByTagName('uf')[0].innerHTML;
+    const cityName = xmlDoc.getElementsByTagName('nome')[0].innerHTML;
+
+    const updateDate = format(
+      parseISO(xmlDoc.getElementsByTagName('atualizacao')[0].innerHTML),
+      'dd/MM/yyyy'
+    );
+    const elPrevisao = xmlDoc.getElementsByTagName('previsao');
+
+    let htmlWeathers = '';
+
+    for (let i = 0; i < elPrevisao.length; i++) {
+      let date = elPrevisao[i].getElementsByTagName('dia')[0].innerHTML;
+      date = parseISO(date);
+      date = format(date, 'dd/MM/yyyy');
+
+      htmlWeathers += '<tr >';
+      htmlWeathers += `<td>${date}</td>`;
+
+      htmlWeathers += `<td>${GetWeatherDescription(
+        elPrevisao[i].getElementsByTagName('tempo')[0].innerHTML
+      )}</td>`;
+
+      htmlWeathers += `<td>${
+        elPrevisao[i].getElementsByTagName('maxima')[0].innerHTML
+      }º</td>`;
+
+      htmlWeathers += `<td>${
+        elPrevisao[i].getElementsByTagName('minima')[0].innerHTML
+      }º</td>`;
+
+      htmlWeathers += '</tr>';
+    }
+
+    document.getElementById('cityName').innerHTML = cityName;
+    document.getElementById('uf').innerHTML = uf;
+    document.getElementById('updateDate').innerHTML = updateDate;
+    document.getElementById('result').innerHTML = htmlWeathers;
+  }
+
+  // Caso o código da cidade seja válido, executa a função para trazer a previsão do tempo
+  if (cityId > 0) {
+    GetWeather(cityId);
+  }
+
+  return (
+    <Content>
+      <ContentHeader>
+        <p>
+          <h3>
+            Previsão do tempo para <span id="cityName" />
+          </h3>
+        </p>
+        <p>
+          <b>UF:</b>
+          <span id="uf" />
+        </p>
+        <p>
+          <b>Data de Consulta:&nbsp;</b>
+          <span id="updateDate" />
+        </p>
+      </ContentHeader>
+      <TableContainer component={Paper}>
+        <table className={classes.table} aria-label="simple table">
+          <thead>
+            <tr>
+              <th>
+                <b>Data</b>
+              </th>
+              <th>
+                <b>Tempo</b>
+              </th>
+              <th>
+                <b>Máxima</b>
+              </th>
+              <th>
+                <b>Mínima</b>
+              </th>
+            </tr>
+          </thead>
+          <Tbody id="result" />
+        </table>
+      </TableContainer>
+      <LinkButton>
+        <Link to="/">Nova Consulta</Link>
+      </LinkButton>
+    </Content>
+  );
+}
+
+/** Dada a abreviação do clima, retorna a descrição completa do clima */
 function GetWeatherDescription(initials) {
   switch (initials) {
     case 'ec':
@@ -108,110 +212,9 @@ function GetWeatherDescription(initials) {
   }
 }
 
-export default function Weather({ match, history }) {
-  console.log(`ID: ${match.params.id}`);
-
-  const cityId = match.params.id;
-
-  if (cityId <= 0) {
-    history.push('/');
-  }
-
-  const classes = useStyles();
-
-  async function GetWeather(cityId) {
-    const api = await apiWeather.get(`/cidade/7dias/${cityId}/previsao.xml`);
-
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(api.data, 'text/xml');
-
-    const uf = xmlDoc.getElementsByTagName('uf')[0].innerHTML;
-    const cityName = xmlDoc.getElementsByTagName('nome')[0].innerHTML;
-
-    const updateDate = format(
-      parseISO(xmlDoc.getElementsByTagName('atualizacao')[0].innerHTML),
-      'dd/MM/yyyy'
-    );
-    const elPrevisao = xmlDoc.getElementsByTagName('previsao');
-
-    let htmlWeathers = '';
-
-    for (let i = 0; i < elPrevisao.length; i++) {
-      let date = elPrevisao[i].getElementsByTagName('dia')[0].innerHTML;
-      date = parseISO(date);
-      date = format(date, 'dd/MM/yyyy');
-
-      htmlWeathers += '<tr >';
-      htmlWeathers += `<td>${date}</td>`;
-
-      htmlWeathers += `<td>${GetWeatherDescription(
-        elPrevisao[i].getElementsByTagName('tempo')[0].innerHTML
-      )}</td>`;
-
-      htmlWeathers += `<td>${
-        elPrevisao[i].getElementsByTagName('maxima')[0].innerHTML
-      }º</td>`;
-
-      htmlWeathers += `<td>${
-        elPrevisao[i].getElementsByTagName('minima')[0].innerHTML
-      }º</td>`;
-
-      htmlWeathers += '</tr>';
-    }
-
-    console.log(cityName);
-
-    document.getElementById('cityName').innerHTML = cityName;
-    document.getElementById('uf').innerHTML = uf;
-    document.getElementById('updateDate').innerHTML = updateDate;
-    document.getElementById('result').innerHTML = htmlWeathers;
-  }
-
-  if (cityId > 0) {
-    GetWeather(cityId);
-  }
-
-  return (
-    <Content>
-      <ContentHeader>
-        <p>
-          <h3>
-            Previsão do tempo para <span id="cityName" />
-          </h3>
-        </p>
-        <p>
-          <b>UF:</b>
-          <span id="uf" />
-        </p>
-        <p>
-          <b>Data de Consulta:&nbsp;</b>
-          <span id="updateDate" />
-        </p>
-      </ContentHeader>
-      <TableContainer component={Paper}>
-        <table className={classes.table} aria-label="simple table">
-          <thead>
-            <tr>
-              <th>
-                <b>Data</b>
-              </th>
-              <th>
-                <b>Tempo</b>
-              </th>
-              <th>
-                <b>Máxima</b>
-              </th>
-              <th>
-                <b>Mínima</b>
-              </th>
-            </tr>
-          </thead>
-          <Tbody id="result" />
-        </table>
-      </TableContainer>
-      <LinkButton>
-        <Link to="/">Nova Consulta</Link>
-      </LinkButton>
-    </Content>
-  );
-}
+/** Define a configuração da tabela para o componente do material-ui */
+const useStyles = makeStyles({
+  table: {
+    minWidth: 650,
+  },
+});
