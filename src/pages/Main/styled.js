@@ -78,3 +78,27 @@ export const LinkButton = styled.div`
     line-height: 1.75;
   }
 `;
+
+export const AutoComplete = styled.div`
+  div {
+    position: absolute;
+    border: 1px solid rgba(224, 224, 224, 1);
+    border-radius: 5px 5px 0 0;
+    margin-left: 10px;
+    width: 400px;
+    height: 300px;
+    overflow-y: auto;
+  }
+
+  ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    grid-gap: 10px;
+    margin-top: 5px;
+  }
+
+  li {
+    text-align: left;
+  }
+`;

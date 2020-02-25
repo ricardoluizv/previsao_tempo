@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 
-import { Content, Form } from './styled';
+import { Content, Form, AutoComplete } from './styled';
 import apiWeather from '../../services/api';
 
 const useStyles = makeStyles(theme => ({
@@ -62,6 +62,28 @@ function Main({ history }) {
 
   async function txtCityOnChange(e) {
     setCity = e;
+
+    const cities = await apiWeather.get(`/listaCidades?city=${e}`);
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(cities.data, 'text/xml');
+
+    const xmlCities = xmlDoc.getElementsByTagName('cidade');
+
+    let html = '<div>';
+    for (let i = 0; i < xmlCities.length; i++) {
+      const city = xmlCities[i].getElementsByTagName('nome')[0].innerHTML;
+      const cityId = xmlCities[i].getElementsByTagName('id')[0].innerHTML;
+      const uf = xmlCities[i].getElementsByTagName('uf')[0].innerHTML;
+
+      html += '<ul>';
+      html += `<a href="/previsao_do_tempo/${cityId}">`;
+      html += `<li>${city} | UF: ${uf}<br>/previsao_do_tempo/${cityId}<li>`;
+      html += '</a>';
+      html += '</ul>';
+    }
+
+    html += '</div>';
+    document.getElementById('cities').innerHTML = html;
   }
 
   return (
@@ -77,6 +99,7 @@ function Main({ history }) {
             onChange={e => txtCityOnChange(e.target.value)}
             name="txtCity"
           />
+
           <Button
             type="submit"
             className={classes.btnSearch}
@@ -86,6 +109,7 @@ function Main({ history }) {
             Buscar
           </Button>
         </div>
+        <AutoComplete id="cities" />
       </Content>
     </Form>
   );
